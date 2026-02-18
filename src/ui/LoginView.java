@@ -3,6 +3,9 @@ package ui;
 import javax.swing.*;
 import db.DBConnection;
 import java.awt.*;
+import java.sql.Connection;
+
+import db.ConnectionManager;
 
 public class LoginView extends JFrame {
 
@@ -12,8 +15,10 @@ public class LoginView extends JFrame {
     private JTextField txtUser;
     private JPasswordField txtPassword;
     private JButton btnConnect;
+    private ConnectionManager connectionManager;
 
     public LoginView() {
+        connectionManager = new ConnectionManager();
         setTitle("DB2 Manager - Login");
         setSize(400, 300);
         setLocationRelativeTo(null);
@@ -81,10 +86,21 @@ public class LoginView extends JFrame {
             return;
         }
 
-        DBConnection connection = new DBConnection();
+       
         try {
             // Conectar usando host, puerto, database, usuario y contraseña
-            connection.connect("localhost", 25000, "TESTDB", "DanielD_2004", "marleny1998");
+            connectionManager.addConnection(
+        db + "_" + user,  // nombre identificador
+        host,
+        port,
+        db,
+        user,
+        password
+);
+
+String connectionName = db + "_" + user;
+DBConnection connection = connectionManager.getConnection(connectionName);
+
 
             JOptionPane.showMessageDialog(this, "Conectado correctamente a DB2!");
 
@@ -98,7 +114,7 @@ public class LoginView extends JFrame {
             }
             JOptionPane.showMessageDialog(this, tables.toString());
 
-            connection.disconnect();
+            
 
         } catch (ClassNotFoundException ex) {
             JOptionPane.showMessageDialog(this,
@@ -110,6 +126,6 @@ public class LoginView extends JFrame {
                     "Error al conectar:\n" + ex.getMessage(),
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
-        }
+        } 
     }
 }
