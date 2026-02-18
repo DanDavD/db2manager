@@ -1,6 +1,7 @@
 package ui;
 
 import javax.swing.*;
+import db.DBConnection;
 import java.awt.*;
 
 public class LoginView extends JFrame {
@@ -29,11 +30,11 @@ public class LoginView extends JFrame {
         panel.add(txtHost);
 
         panel.add(new JLabel("Port:"));
-        txtPort = new JTextField("50000");
+        txtPort = new JTextField("25000");
         panel.add(txtPort);
 
         panel.add(new JLabel("Database:"));
-        txtDatabase = new JTextField();
+        txtDatabase = new JTextField("TESTDB"); // Puedes poner TESTDB por default
         panel.add(txtDatabase);
 
         panel.add(new JLabel("User:"));
@@ -55,13 +56,60 @@ public class LoginView extends JFrame {
 
     private void simulateConnection() {
         String host = txtHost.getText();
-        String port = txtPort.getText();
         String db = txtDatabase.getText();
         String user = txtUser.getText();
+        String password = new String(txtPassword.getPassword());
 
-        JOptionPane.showMessageDialog(this,
-                "Simulated connection to:\n" +
-                host + ":" + port + "/" + db +
-                "\nUser: " + user);
+        // Convertir puerto a entero
+        int port;
+        try {
+            port = Integer.parseInt(txtPort.getText());
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this,
+                    "El puerto debe ser un número válido",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // Validar campos obligatorios
+        if (host.isEmpty() || db.isEmpty() || user.isEmpty() || password.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Todos los campos son obligatorios",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        DBConnection connection = new DBConnection();
+        try {
+            // Conectar usando host, puerto, database, usuario y contraseña
+            connection.connect("localhost", 25000, "TESTDB", "DanielD_2004", "marleny1998");
+
+            JOptionPane.showMessageDialog(this, "Conectado correctamente a DB2!");
+
+            // Listar primeras 10 tablas (opcional)
+            var stmt = connection.getConnection().createStatement();
+            var rs = stmt.executeQuery("SELECT TABNAME FROM SYSCAT.TABLES FETCH FIRST 10 ROWS ONLY");
+
+            StringBuilder tables = new StringBuilder("Primeras tablas en DB2:\n");
+            while (rs.next()) {
+                tables.append(rs.getString("TABNAME")).append("\n");
+            }
+            JOptionPane.showMessageDialog(this, tables.toString());
+
+            connection.disconnect();
+
+        } catch (ClassNotFoundException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Driver JDBC no encontrado:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al conectar:\n" + ex.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 }
