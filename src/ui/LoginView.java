@@ -103,6 +103,9 @@ DBConnection connection = connectionManager.getConnection(connectionName);
 
 
             JOptionPane.showMessageDialog(this, "Conectado correctamente a DB2!");
+            new MainView(connectionManager);
+            dispose(); // cerrar ventana de login
+
 
             // Listar primeras 10 tablas (opcional)
             var stmt = connection.getConnection().createStatement();
