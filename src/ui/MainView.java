@@ -3,6 +3,7 @@ package ui;
 import javax.swing.*;
 import java.awt.*;
 import db.ConnectionManager;
+import db.DBConnection;
 
 public class MainView extends JFrame {
 
@@ -36,5 +37,31 @@ public class MainView extends JFrame {
         JScrollPane scrollPane = new JScrollPane(connectionList);
 
         add(scrollPane, BorderLayout.WEST);
+
+        // Panel de botones
+        JPanel panelBotones = new JPanel();
+
+        JButton btnCrearTabla = new JButton("Crear Tabla");
+        btnCrearTabla.addActionListener(e -> abrirCrearTabla());
+
+        panelBotones.add(btnCrearTabla);
+
+        // Agregar panel de botones arriba de la ventana
+        add(panelBotones, BorderLayout.NORTH);
     }
+
+    private void abrirCrearTabla() {
+    String selectedName = connectionList.getSelectedValue();
+    if (selectedName != null) {
+        DBConnection db = connectionManager.getConnection(selectedName);
+        CrearTablaView crearTabla = new CrearTablaView(db);
+        crearTabla.setVisible(true);
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "Seleccione una conexión primero.",
+                "Atención",
+                JOptionPane.WARNING_MESSAGE);
+    }
+}
+
 }
