@@ -3,6 +3,8 @@ package db;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
+
 
 public class DBConnection {
 
@@ -38,5 +40,14 @@ public class DBConnection {
 
     public boolean isConnected() throws SQLException {
         return connection != null && !connection.isClosed();
+    }
+
+    public void ejecutarDDL(String ddl) {
+        try (Statement stmt = connection.createStatement()) {
+            stmt.executeUpdate(ddl);
+            System.out.println("DDL ejecutado correctamente!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }
