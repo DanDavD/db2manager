@@ -4,6 +4,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+import java.sql.*;
+
+import model.Vista;
 
 
 public class DBConnection {
@@ -49,5 +54,23 @@ public class DBConnection {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    public List<Vista> listarVistas() throws SQLException {
+        List<Vista> vistas = new ArrayList<>();
+
+        String sql = "SELECT VIEWNAME, TEXT FROM SYSCAT.VIEWS"; // TEXT contiene el SELECT
+
+        try (Statement stmt = connection.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String nombre = rs.getString("VIEWNAME");
+                String selectSQL = rs.getString("TEXT");
+                vistas.add(new Vista(nombre, selectSQL));
+            }
+        }
+
+        return vistas;
     }
 }

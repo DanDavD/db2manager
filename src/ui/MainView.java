@@ -48,6 +48,11 @@ public class MainView extends JFrame {
 
         // Agregar panel de botones arriba de la ventana
         add(panelBotones, BorderLayout.NORTH);
+
+        JButton btnCrearVista = new JButton("Vistas");
+        btnCrearVista.addActionListener(e -> abrirVistasPanel());
+        panelBotones.add(btnCrearVista);
+
     }
 
     private void abrirCrearTabla() {
@@ -56,6 +61,29 @@ public class MainView extends JFrame {
         DBConnection db = connectionManager.getConnection(selectedName);
         CrearTablaView crearTabla = new CrearTablaView(db);
         crearTabla.setVisible(true);
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "Seleccione una conexión primero.",
+                "Atención",
+                JOptionPane.WARNING_MESSAGE);
+    }
+}
+
+    private void abrirVistasPanel() {
+    String selectedName = connectionList.getSelectedValue();
+    if (selectedName != null) {
+        DBConnection db = connectionManager.getConnection(selectedName);
+
+      
+        JFrame frameVistas = new JFrame("Vistas - " + selectedName);
+        frameVistas.setSize(800, 500);
+        frameVistas.setLocationRelativeTo(this);
+        frameVistas.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        VistasPanel vistasPanel = new VistasPanel(db);
+        frameVistas.add(vistasPanel);
+        frameVistas.setVisible(true);
+
     } else {
         JOptionPane.showMessageDialog(this,
                 "Seleccione una conexión primero.",
