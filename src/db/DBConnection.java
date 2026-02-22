@@ -72,21 +72,6 @@ public class DBConnection {
         return vistas;
     }
 
-    // obtener cualquier onjeto en tipo SYSCAT.TABLES
-public List<String> listarObjetos(String tipo) throws SQLException {
-    List<String> objetos = new ArrayList<>();
-    // TYPE 'T' = Tabla, 'V' = Vista, 'A' = Alias
-    String sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TYPE = '" + tipo + "' AND TABSCHEMA NOT LIKE 'SYS%'";
-    
-    try (Statement stmt = connection.createStatement();
-         ResultSet rs = stmt.executeQuery(sql)) {
-        while (rs.next()) {
-            objetos.add(rs.getString("TABNAME"));
-        }
-    }
-    return objetos;
-}
-
 public Tabla obtenerTablaDesdeMetadata(String nombreTabla) throws SQLException {
     List<Columna> columnas = new ArrayList<>();
     
@@ -121,5 +106,34 @@ public Tabla obtenerTablaDesdeMetadata(String nombreTabla) throws SQLException {
     
     if (columnas.isEmpty()) return null;
     return new Tabla(nombreTabla, columnas);
+}
+
+public List<String> listarObjetos(String tipo) throws SQLException {
+    List<String> lista = new ArrayList<>();
+    String sql = "";
+    
+    // DB2 guarda los nombres en estas tablas de sistema
+    switch (tipo) {
+        case "TABLAS":
+            sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = 'DANIELD_2004' AND TYPE = 'T'";
+            break;
+        case "VISTAS":
+            sql = "SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = 'DANIELD_2004'";
+            break;
+        case "PROCEDIMIENTOS":
+            sql = "SELECT PROCNAME FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = 'DANIELD_2004'";
+            break;
+        case "INDICES":
+            sql = "SELECT INDNAME FROM SYSCAT.INDEXES WHERE TABSCHEMA = 'DANIELD_2004'";
+            break;
+    }
+
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        while (rs.next()) {
+            lista.add(rs.getString(1));
+        }
+    }
+    return lista;
 }
 }
