@@ -1,6 +1,9 @@
 package ui;
 
 import javax.swing.*;
+
+import com.ibm.db2.jcc.am.de;
+
 import java.awt.*;
 import db.ConnectionManager;
 import db.DBConnection;
@@ -23,37 +26,77 @@ public class MainView extends JFrame {
         setVisible(true);
     }
 
-    private void initComponents() {
-
-        listModel = new DefaultListModel<>();
-
-        // Llenar lista con conexiones activas
-        String[] connections = connectionManager.listConnectionNames();
-        for (String name : connections) {
-            listModel.addElement(name);
-        }
-
-        connectionList = new JList<>(listModel);
-        JScrollPane scrollPane = new JScrollPane(connectionList);
-
-        add(scrollPane, BorderLayout.WEST);
-
-        // Panel de botones
-        JPanel panelBotones = new JPanel();
-
-        JButton btnCrearTabla = new JButton("Crear Tabla");
-        btnCrearTabla.addActionListener(e -> abrirCrearTabla());
-
-        panelBotones.add(btnCrearTabla);
-
-        // Agregar panel de botones arriba de la ventana
-        add(panelBotones, BorderLayout.NORTH);
-
-        JButton btnCrearVista = new JButton("Vistas");
-        btnCrearVista.addActionListener(e -> abrirVistasPanel());
-        panelBotones.add(btnCrearVista);
-
+private void initComponents() {
+    // 1. Configuración del Modelo de Lista de Conexiones (Mantiene tu lógica)
+    listModel = new DefaultListModel<>();
+    String[] connections = connectionManager.listConnectionNames();
+    for (String name : connections) {
+        listModel.addElement(name);
     }
+    connectionList = new JList<>(listModel);
+    JScrollPane scrollConexiones = new JScrollPane(connectionList);
+    scrollConexiones.setPreferredSize(new Dimension(200, 0)); // Ancho fijo para la izquierda
+
+    // 2. Panel Central con Pestañas (Para cumplir con Ejecución SQL)
+    JTabbedPane tabbedPane = new JTabbedPane();
+
+    // Pestaña de Consola SQL
+    JPanel panelSQL = new JPanel(new BorderLayout());
+    JTextArea txtQuery = new JTextArea("SELECT * FROM SYSCAT.TABLES WHERE TABSCHEMA NOT LIKE 'SYS%'");
+    txtQuery.setFont(new Font("Monospaced", Font.PLAIN, 12));
+    JButton btnEjecutarSQL = new JButton("Ejecutar Query (SELECT)");
+    
+    // Tabla para resultados (Puntos de Ejecución de Sentencias)
+    JTable tablaResultados = new JTable();
+    JScrollPane scrollResultados = new JScrollPane(tablaResultados);
+
+    panelSQL.add(new JScrollPane(txtQuery), BorderLayout.CENTER);
+    
+    // Panel sur para el botón y los resultados
+    JPanel panelInferiorSQL = new JPanel(new BorderLayout());
+    panelInferiorSQL.setPreferredSize(new Dimension(0, 200));
+    panelInferiorSQL.add(btnEjecutarSQL, BorderLayout.NORTH);
+    panelInferiorSQL.add(scrollResultados, BorderLayout.CENTER);
+    
+    panelSQL.add(panelInferiorSQL, BorderLayout.SOUTH);
+    tabbedPane.addTab("Editor SQL / Resultados", panelSQL);
+
+    // 3. SplitPane para organizar Izquierda (Conexiones) y Derecha (Contenido)
+    JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, scrollConexiones, tabbedPane);
+    add(splitPane, BorderLayout.CENTER);
+
+    // 4. Panel de botones Superior (Mantiene tus funciones originales)
+    JPanel panelBotones = new JPanel();
+    
+    JButton btnCrearTabla = new JButton("Nueva Tabla");
+    btnCrearTabla.addActionListener(e -> abrirCrearTabla());
+
+    JButton btnVistas = new JButton("Explorar Vistas");
+    btnVistas.addActionListener(e -> abrirVistasPanel());
+    
+    JButton btnRefrescar = new JButton("Actualizar Lista");
+    btnRefrescar.addActionListener(e -> refrescarConexiones());
+
+    panelBotones.add(btnCrearTabla);
+    panelBotones.add(btnVistas);
+    panelBotones.add(btnRefrescar);
+
+    add(panelBotones, BorderLayout.NORTH);
+
+    // ejecutar sql
+    btnEjecutarSQL.addActionListener(e -> {
+        //llamar metodo para ejecutar sql mas tarde
+        JOptionPane.showMessageDialog(this, "Ejecutando: " + txtQuery.getText());
+    });
+}
+
+// refrescar lista para nuevas conexiones
+private void refrescarConexiones() {
+    listModel.clear();
+    for (String name : connectionManager.listConnectionNames()) {
+        listModel.addElement(name);
+    }
+}
 
     private void abrirCrearTabla() {
     String selectedName = connectionList.getSelectedValue();

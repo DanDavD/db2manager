@@ -1,9 +1,5 @@
 package db;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.sql.*;
@@ -73,4 +69,19 @@ public class DBConnection {
 
         return vistas;
     }
+
+    // obtener cualquier onjeto en tipo SYSCAT.TABLES
+public List<String> listarObjetos(String tipo) throws SQLException {
+    List<String> objetos = new ArrayList<>();
+    // TYPE 'T' = Tabla, 'V' = Vista, 'A' = Alias
+    String sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TYPE = '" + tipo + "' AND TABSCHEMA NOT LIKE 'SYS%'";
+    
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        while (rs.next()) {
+            objetos.add(rs.getString("TABNAME"));
+        }
+    }
+    return objetos;
+}
 }

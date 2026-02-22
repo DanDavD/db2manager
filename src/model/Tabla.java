@@ -1,4 +1,5 @@
 package model;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Tabla {
@@ -18,26 +19,36 @@ public class Tabla {
 
     // Genera el DDL CREATE TABLE automáticamente
     public String generarDDL() {
-        StringBuilder ddl = new StringBuilder();
-        ddl.append("CREATE TABLE ").append(nombre).append(" (\n");
+    StringBuilder ddl = new StringBuilder();
+    ddl.append("CREATE TABLE ").append(nombre).append(" (\n");
 
-        for (Columna col : columnas) {
-            ddl.append("  ").append(col.getNombre())
-               .append(" ").append(col.getTipo());
-            if (col.isNotNull()) ddl.append(" NOT NULL");
-            if (col.isUnique()) ddl.append(" UNIQUE");
-            ddl.append(",\n");
-        }
+    List<String> lineasColumnas = new ArrayList<>();
+    for (Columna col : columnas) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("  ").append(col.getNombre()).append(" ").append(col.getTipo());
+        
+        // Si agregas longitud en el modelo, úsala aquí:
+        // if(col.hasLength()) sb.append("(").append(col.getLongitud()).append(")");
 
-        List<String> pks = columnas.stream().filter(Columna::isPrimaryKey).map(Columna::getNombre).toList();
-
-        if (!pks.isEmpty()) {
-            ddl.append("  PRIMARY KEY(").append(String.join(", ", pks)).append(")\n");
-        } else {
-            ddl.setLength(ddl.length() - 2); // quitar la última coma
-        }
-
-        ddl.append(");");
-        return ddl.toString();
+        if (col.isNotNull()) sb.append(" NOT NULL");
+        if (col.isUnique()) sb.append(" UNIQUE");
+        lineasColumnas.add(sb.toString());
     }
+
+    // Unimos columnas con comas
+    ddl.append(String.join(",\n", lineasColumnas));
+
+    // Agregar PK si existe
+    List<String> pks = columnas.stream()
+            .filter(Columna::isPrimaryKey)
+            .map(Columna::getNombre)
+            .toList();
+
+    if (!pks.isEmpty()) {
+        ddl.append(",\n  PRIMARY KEY (").append(String.join(", ", pks)).append(")");
+    }
+
+    ddl.append("\n);");
+    return ddl.toString();
+}
 }
