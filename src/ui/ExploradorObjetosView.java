@@ -1,0 +1,123 @@
+package ui;
+
+import db.DBConnection;
+import javax.swing.*;
+import java.awt.*;
+import java.sql.SQLException;
+import java.util.List;
+
+public class ExploradorObjetosView extends JFrame {
+    private DBConnection db;
+    private JComboBox<String> cbTipos;
+    private JList<String> listaObjetos;
+    private DefaultListModel<String> listModel;
+
+    public ExploradorObjetosView(DBConnection db) {
+        this.db = db;
+        setTitle("Administrador de Objetos DB2");
+        setSize(450, 550);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
+
+        // --- PANEL SUPERIOR (Selector) ---
+        JPanel panelSuperior = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        panelSuperior.setBorder(BorderFactory.createTitledBorder("Filtro de Objetos"));
+        
+        // El JComboBox con los nombres que tu switch espera
+        cbTipos = new JComboBox<>(new String[]{"TABLAS", "VISTAS", "PROCEDIMIENTOS", "INDICES"});
+        cbTipos.addActionListener(e -> cargarObjetos()); // Recarga al cambiar opción
+        
+        panelSuperior.add(new JLabel("Tipo de Objeto:"));
+        panelSuperior.add(cbTipos);
+
+        // --- PANEL CENTRAL (Lista) ---
+        listModel = new DefaultListModel<>();
+        listaObjetos = new JList<>(listModel);
+        listaObjetos.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        JScrollPane scrollLista = new JScrollPane(listaObjetos);
+        scrollLista.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+
+        // --- PANEL INFERIOR (Botones) ---
+        JPanel panelAcciones = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 10));
+        JButton btnDDL = new JButton("Ver Estructura (DDL)");
+        JButton btnEliminar = new JButton("Eliminar Objeto");
+
+        btnDDL.addActionListener(e -> verEstructura());
+        btnEliminar.addActionListener(e -> borrarSeleccionado());
+
+        panelAcciones.add(btnDDL);
+        panelAcciones.add(btnEliminar);
+
+        // Agregar todo al Frame
+        add(panelSuperior, BorderLayout.NORTH);
+        add(scrollLista, BorderLayout.CENTER);
+        add(panelAcciones, BorderLayout.SOUTH);
+
+        // Carga automática al abrir
+        cargarObjetos();
+    }
+
+    private void cargarObjetos() {
+        listModel.clear();
+        String tipo = (String) cbTipos.getSelectedItem();
+        try {
+            List<String> resultados = db.listarObjetos(tipo);
+            for (String item : resultados) {
+                listModel.addElement(item);
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al listar: " + e.getMessage());
+        }
+    }
+
+    private void verEstructura() {
+        String seleccionado = listaObjetos.getSelectedValue();
+        String tipo = (String) cbTipos.getSelectedItem();
+        
+        if (seleccionado == null) {
+            JOptionPane.showMessageDialog(this, "Selecciona algo de la lista.");
+            return;
+        }
+
+        if (tipo.equals("TABLAS")) {
+            try {
+                // Tu ingeniería inversa existente
+                model.Tabla t = db.obtenerTablaDesdeMetadata(seleccionado);
+                new DDLView(seleccionado, t.generarDDL()).setVisible(true);
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error al generar DDL: " + e.getMessage());
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "La ingeniería inversa para " + tipo + " se habilitará en la siguiente fase.");
+        }
+    }
+
+    private void borrarSeleccionado() {
+        String seleccionado = listaObjetos.getSelectedValue();
+        String tipo = (String) cbTipos.getSelectedItem();
+        
+        if (seleccionado == null) return;
+
+        int confirm = JOptionPane.showConfirmDialog(this, "¿Estás seguro de borrar " + seleccionado + "?", "Confirmar DROP", JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try {
+                // Traducimos el tipo para el comando DROP de SQL
+                String sqlTipo = "";
+                switch(tipo) {
+                    case "TABLAS": sqlTipo = "TABLE"; break;
+                    case "VISTAS": sqlTipo = "VIEW"; break;
+                    case "PROCEDIMIENTOS": sqlTipo = "PROCEDURE"; break;
+                    case "INDICES": sqlTipo = "INDEX"; break;
+                }
+                
+                db.ejecutarDDL("DROP " + sqlTipo + " " + seleccionado);
+                cargarObjetos(); // Refrescar lista automáticamente
+                JOptionPane.showMessageDialog(this, "Objeto eliminado correctamente.");
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "No se pudo eliminar: " + e.getMessage());
+            }
+        }
+    }
+}

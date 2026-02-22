@@ -109,31 +109,33 @@ public Tabla obtenerTablaDesdeMetadata(String nombreTabla) throws SQLException {
 }
 
 public List<String> listarObjetos(String tipo) throws SQLException {
-    List<String> lista = new ArrayList<>();
+    List<String> objetos = new ArrayList<>();
     String sql = "";
     
-    // DB2 guarda los nombres en estas tablas de sistema
+    // El switch debe coincidir EXACTAMENTE con el JComboBox del Explorador
     switch (tipo) {
         case "TABLAS":
-            sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TABSCHEMA = 'DANIELD_2004' AND TYPE = 'T'";
+            sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'T' AND TABSCHEMA NOT LIKE 'SYS%'";
             break;
         case "VISTAS":
-            sql = "SELECT VIEWNAME FROM SYSCAT.VIEWS WHERE VIEWSCHEMA = 'DANIELD_2004'";
+            sql = "SELECT TABNAME FROM SYSCAT.TABLES WHERE TYPE = 'V' AND TABSCHEMA NOT LIKE 'SYS%'";
             break;
         case "PROCEDIMIENTOS":
-            sql = "SELECT PROCNAME FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA = 'DANIELD_2004'";
+            sql = "SELECT PROCNAME FROM SYSCAT.PROCEDURES WHERE PROCSCHEMA NOT LIKE 'SYS%'";
             break;
         case "INDICES":
-            sql = "SELECT INDNAME FROM SYSCAT.INDEXES WHERE TABSCHEMA = 'DANIELD_2004'";
+            sql = "SELECT INDNAME FROM SYSCAT.INDEXES WHERE INDSCHEMA NOT LIKE 'SYS%'";
             break;
     }
+
+    if (sql.isEmpty()) return objetos;
 
     try (Statement stmt = connection.createStatement();
          ResultSet rs = stmt.executeQuery(sql)) {
         while (rs.next()) {
-            lista.add(rs.getString(1));
+            objetos.add(rs.getString(1).trim());
         }
     }
-    return lista;
+    return objetos;
 }
 }
