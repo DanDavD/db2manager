@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.sql.*;
 
+import model.Columna;
+import model.Tabla;
 import model.Vista;
 
 
@@ -83,5 +85,41 @@ public List<String> listarObjetos(String tipo) throws SQLException {
         }
     }
     return objetos;
+}
+
+public Tabla obtenerTablaDesdeMetadata(String nombreTabla) throws SQLException {
+    List<Columna> columnas = new ArrayList<>();
+    
+    // Query para obtener columnas y detectar si son PK, Not Null, toda la info basicamente
+    String sql = "SELECT c.COLNAME, c.TYPENAME, c.LENGTH, c.NULLS, " +
+                 "(SELECT count(*) FROM SYSCAT.KEYCOLUSE k " +
+                 " WHERE k.TABNAME = c.TABNAME AND k.COLNAME = c.COLNAME) as IS_PK " +
+                 "FROM SYSCAT.COLUMNS c " +
+                 "WHERE c.TABNAME = '" + nombreTabla.toUpperCase() + "' " +
+                 "ORDER BY c.COLNO";
+
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        while (rs.next()) {
+            String nombre = rs.getString("COLNAME");
+            String tipo = rs.getString("TYPENAME");
+            int longitud = rs.getInt("LENGTH");
+            boolean isPk = rs.getInt("IS_PK") > 0;
+            boolean isNotNull = rs.getString("NULLS").equals("N");
+            
+            // Ajusta el tipo para que incluya la longitud 
+            String tipoCompleto = tipo;
+            if (tipo.contains("CHAR") || tipo.contains("GRAPHIC")) {
+                tipoCompleto += "(" + longitud + ")";
+            }
+
+            // usa el modelo columna 
+            columnas.add(new Columna(nombre, tipoCompleto, isPk, isNotNull, false));
+        }
+    }
+    
+    if (columnas.isEmpty()) return null;
+    return new Tabla(nombreTabla, columnas);
 }
 }

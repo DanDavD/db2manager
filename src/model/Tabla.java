@@ -30,7 +30,10 @@ public class Tabla {
         // Si agregas longitud en el modelo, úsala aquí:
         // if(col.hasLength()) sb.append("(").append(col.getLongitud()).append(")");
 
-        if (col.isNotNull()) sb.append(" NOT NULL");
+        if (col.isPrimaryKey() || col.isNotNull()) {
+            sb.append(" NOT NULL");
+        }
+        
         if (col.isUnique()) sb.append(" UNIQUE");
         lineasColumnas.add(sb.toString());
     }

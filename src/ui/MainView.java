@@ -88,6 +88,10 @@ private void initComponents() {
         //llamar metodo para ejecutar sql mas tarde
         JOptionPane.showMessageDialog(this, "Ejecutando: " + txtQuery.getText());
     });
+
+    JButton btnExplorarTablas = new JButton("Explorar Tablas");
+btnExplorarTablas.addActionListener(e -> abrirTablasPanel());
+panelBotones.add(btnExplorarTablas);
 }
 
 // refrescar lista para nuevas conexiones
@@ -134,5 +138,23 @@ private void refrescarConexiones() {
                 JOptionPane.WARNING_MESSAGE);
     }
 }
+
+private void abrirTablasPanel() {
+    String selectedName = connectionList.getSelectedValue();
+    if (selectedName != null) {
+        DBConnection db = connectionManager.getConnection(selectedName);
+        
+        JFrame frameTablas = new JFrame("Administrador de Tablas - " + selectedName);
+        frameTablas.setSize(400, 600);
+        frameTablas.setLocationRelativeTo(this);
+        
+        frameTablas.add(new TablasPanel(db));
+        frameTablas.setVisible(true);
+    } else {
+        JOptionPane.showMessageDialog(this, "Seleccione una conexión primero.");
+    }
+}
+
+
 
 }

@@ -88,6 +88,15 @@ public class CrearTablaView extends JFrame {
         JCheckBox cbNN = new JCheckBox("Not Null");
         JCheckBox cbUnique = new JCheckBox("Unique");
 
+        cbPK.addActionListener(e -> {
+        if (cbPK.isSelected()) {
+            cbNN.setSelected(true); // Si es PK marca null
+            cbNN.setEnabled(false);  //bloquear
+        } else {
+            cbNN.setEnabled(true);   // Si quita PK, deja que edite Not Null
+        }
+    });
+
         JPanel panel = new JPanel(new GridLayout(0, 1));
         panel.add(new JLabel("Nombre:"));
         panel.add(tfNombre);
