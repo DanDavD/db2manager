@@ -91,8 +91,9 @@ public class ExploradorObjetosView extends JFrame {
             ddl = db.obtenerDDLIndice(seleccionado); 
         } else if (tipo.equals("TABLESPACES")) {
             ddl = db.obtenerInfoTablespace(seleccionado);
-        }  
-         else {
+        } else if (tipo.equals("USUARIOS")) {
+            ddl = db.obtenerDDLUsuario(seleccionado);
+        } else {
             ddl = "-- Ingeniería inversa para " + tipo + " en desarrollo.\n-- Puedes ver su existencia en SYSCAT.";
         }
         

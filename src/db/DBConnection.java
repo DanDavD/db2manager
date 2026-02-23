@@ -253,5 +253,30 @@ public String obtenerInfoTablespace(String nombreTS) throws SQLException {
     return "-- No se encontró información del Tablespace.";
 }
 
+    public String obtenerDDLUsuario(String nombreUsuario) throws SQLException {
+    StringBuilder ddl = new StringBuilder();
+    ddl.append("-- Privilegios de Base de Datos para: ").append(nombreUsuario).append("\n");
+    ddl.append("------------------------------------------------------------------\n");
 
+
+    String sql = "SELECT * FROM SYSCAT.DBAUTH WHERE GRANTEE = ?";
+
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setString(1, nombreUsuario.toUpperCase());
+        try (ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+
+                try { if ("Y".equals(rs.getString("CONNECTAUTH"))) ddl.append("GRANT CONNECT ON DATABASE TO ").append(nombreUsuario).append(";\n"); } catch (Exception e) {}
+                try { if ("Y".equals(rs.getString("CREATETABAUTH"))) ddl.append("GRANT CREATETAB ON DATABASE TO ").append(nombreUsuario).append(";\n"); } catch (Exception e) {}
+                try { if ("Y".equals(rs.getString("DBADMAUTH"))) ddl.append("GRANT DBADM ON DATABASE TO ").append(nombreUsuario).append(";\n"); } catch (Exception e) {}
+                try { if ("Y".equals(rs.getString("LOADAUTH"))) ddl.append("GRANT LOAD ON DATABASE TO ").append(nombreUsuario).append(";\n"); } catch (Exception e) {}
+                
+
+            } else {
+                ddl.append("-- No se encontraron privilegios directos.");
+            }
+        }
+    }
+    return ddl.toString();
+}
 }
