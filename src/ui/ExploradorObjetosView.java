@@ -25,7 +25,11 @@ public class ExploradorObjetosView extends JFrame {
         panelSuperior.setBorder(BorderFactory.createTitledBorder("Filtro de Objetos"));
         
         // El JComboBox con los nombres que tu switch espera
-        cbTipos = new JComboBox<>(new String[]{"TABLAS", "VISTAS", "PROCEDIMIENTOS", "INDICES"});
+        cbTipos = new JComboBox<>(new String[]{
+    "TABLAS", "VISTAS", "INDICES", "TRIGGERS", 
+    "PROCEDIMIENTOS", "FUNCIONES", "SECUENCIAS", 
+    "TABLESPACES", "USUARIOS"
+});
         cbTipos.addActionListener(e -> cargarObjetos()); // Recarga al cambiar opción
         
         panelSuperior.add(new JLabel("Tipo de Objeto:"));
