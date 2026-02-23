@@ -193,4 +193,28 @@ private DefaultTableModel construirModeloTabla(ResultSet rs) throws SQLException
     return model;
 }
 
+public String obtenerDDLIndice(String nombreIndice) throws SQLException {
+    String sql = "SELECT TABNAME, COLNAMES, UNIQUERULE " +
+                 "FROM SYSCAT.INDEXES " +
+                 "WHERE INDNAME = '" + nombreIndice.toUpperCase() + "'";
+
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        if (rs.next()) {
+            String tabla = rs.getString("TABNAME");
+            String columnas = rs.getString("COLNAMES"); //col1+col2
+            String unico = rs.getString("UNIQUERULE").equals("U") ? "UNIQUE " : "";
+            
+            // Limpiar las columnas: DB2 las trae con '+' al inicio
+            columnas = columnas.replace("+", ", ").substring(2); 
+
+            return "CREATE " + unico + "INDEX " + nombreIndice + 
+                   "\nON " + tabla + " (" + columnas + ");";
+        }
+    }
+    return "-- No se pudo generar el DDL del índice.";
+}
+
+
 }

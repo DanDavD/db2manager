@@ -79,22 +79,23 @@ public class ExploradorObjetosView extends JFrame {
         String seleccionado = listaObjetos.getSelectedValue();
         String tipo = (String) cbTipos.getSelectedItem();
         
-        if (seleccionado == null) {
-            JOptionPane.showMessageDialog(this, "Selecciona algo de la lista.");
-            return;
-        }
+        if (seleccionado == null) return;
 
+    try {
+        String ddl = "";
         if (tipo.equals("TABLAS")) {
-            try {
-                // Tu ingeniería inversa existente
-                model.Tabla t = db.obtenerTablaDesdeMetadata(seleccionado);
-                new DDLView(seleccionado, t.generarDDL()).setVisible(true);
-            } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Error al generar DDL: " + e.getMessage());
-            }
+            ddl = db.obtenerTablaDesdeMetadata(seleccionado).generarDDL();
+        } else if (tipo.equals("INDICES")) {
+            ddl = db.obtenerDDLIndice(seleccionado); 
         } else {
-            JOptionPane.showMessageDialog(this, "La ingeniería inversa para " + tipo + " se habilitará en la siguiente fase.");
+            ddl = "-- Ingeniería inversa no implementada para " + tipo;
         }
+        
+        new DDLView(seleccionado, ddl).setVisible(true);
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+    }
     }
 
     private void borrarSeleccionado() {
