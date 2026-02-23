@@ -2,6 +2,9 @@ package db;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.table.DefaultTableModel;
+
 import java.sql.*;
 
 import model.Columna;
@@ -138,4 +141,41 @@ public List<String> listarObjetos(String tipo) throws SQLException {
     }
     return objetos;
 }
+
+public Object ejecutarSQL(String sql) throws SQLException {
+    // limpiar sql para ver su inicial
+    String query = sql.trim().toUpperCase();
+    Statement stmt = connection.createStatement();
+
+    if (query.startsWith("SELECT")) {
+        //devolver el defauttable
+        ResultSet rs = stmt.executeQuery(sql);
+        return construirModeloTabla(rs);
+    } else {
+        //comando create, insert, etc
+        int filasAfectadas = stmt.executeUpdate(sql);
+        return filasAfectadas; // dovolver num filas o exito
+    }
+}
+
+// Método auxiliar para convertir el ResultSet en algo que el JTable entienda
+private DefaultTableModel construirModeloTabla(ResultSet rs) throws SQLException {
+    DefaultTableModel model = new DefaultTableModel();
+    ResultSetMetaData metaData = rs.getMetaData();
+    int columnCount = metaData.getColumnCount();
+
+    for (int i = 1; i <= columnCount; i++) {
+        model.addColumn(metaData.getColumnName(i));
+    }
+
+    while (rs.next()) {
+        Object[] row = new Object[columnCount];
+        for (int i = 1; i <= columnCount; i++) {
+            row[i - 1] = rs.getObject(i);
+        }
+        model.addRow(row);
+    }
+    return model;
+}
+
 }

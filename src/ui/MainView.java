@@ -1,6 +1,8 @@
 package ui;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+
 import java.awt.*;
 import db.ConnectionManager;
 import db.DBConnection;
@@ -78,10 +80,35 @@ public class MainView extends JFrame {
 
         add(panelBotones, BorderLayout.NORTH);
 
-        // Acción del Botón SQL
+        //boton de ejecutar SQL
         btnEjecutarSQL.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Ejecutando: " + txtQuery.getText());
-        });
+    String sql = txtQuery.getText().trim();
+    String selectedName = connectionList.getSelectedValue();
+
+    if (selectedName == null || sql.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Asegúrate de tener una conexión seleccionada y un comando SQL escrito.");
+        return;
+    }
+
+    try {
+        DBConnection db = connectionManager.getConnection(selectedName);
+        Object resultado = db.ejecutarSQL(sql);
+
+        if (resultado instanceof DefaultTableModel) {
+            // Si es un select, mostramos los datos
+            tablaResultados.setModel((DefaultTableModel) resultado);
+        } else {
+            // Si es un DDL/DML (create, drop, insert ) se muestra con exito
+            int filas = (int) resultado;
+            JOptionPane.showMessageDialog(this, "Comando ejecutado con éxito. Filas afectadas: " + filas);
+            
+            //limpiar tabla de resultados anteriores
+            tablaResultados.setModel(new DefaultTableModel());
+        }
+    } catch (Exception ex) {
+        JOptionPane.showMessageDialog(this, "Error de DB2: " + ex.getMessage(), "Error SQL", JOptionPane.ERROR_MESSAGE);
+    }
+});
     }
 
     // --- MÉTODOS DE APOYO (SIGUIENDO TU ESTÁNDAR) ---
@@ -129,6 +156,7 @@ public class MainView extends JFrame {
     }
 
     private void mostrarAvisoConexion() {
+
         JOptionPane.showMessageDialog(this,
                 "Seleccione una conexión primero de la lista de la izquierda.",
                 "Atención",
