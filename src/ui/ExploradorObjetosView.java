@@ -76,19 +76,24 @@ public class ExploradorObjetosView extends JFrame {
     }
 
     private void verEstructura() {
-        String seleccionado = listaObjetos.getSelectedValue();
-        String tipo = (String) cbTipos.getSelectedItem();
-        
-        if (seleccionado == null) return;
+    String seleccionado = listaObjetos.getSelectedValue();
+    String tipo = (String) cbTipos.getSelectedItem();
+    
+    if (seleccionado == null) return;
 
     try {
         String ddl = "";
         if (tipo.equals("TABLAS")) {
             ddl = db.obtenerTablaDesdeMetadata(seleccionado).generarDDL();
+        } else if (tipo.equals("VISTAS")) {
+            ddl = db.obtenerDDLVista(seleccionado); 
         } else if (tipo.equals("INDICES")) {
             ddl = db.obtenerDDLIndice(seleccionado); 
-        } else {
-            ddl = "-- Ingeniería inversa no implementada para " + tipo;
+        } else if (tipo.equals("TABLESPACES")) {
+            ddl = db.obtenerInfoTablespace(seleccionado);
+        }  
+         else {
+            ddl = "-- Ingeniería inversa para " + tipo + " en desarrollo.\n-- Puedes ver su existencia en SYSCAT.";
         }
         
         new DDLView(seleccionado, ddl).setVisible(true);
@@ -96,7 +101,7 @@ public class ExploradorObjetosView extends JFrame {
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
     }
-    }
+}
 
     private void borrarSeleccionado() {
         String seleccionado = listaObjetos.getSelectedValue();
@@ -108,7 +113,7 @@ public class ExploradorObjetosView extends JFrame {
         
         if (confirm == JOptionPane.YES_OPTION) {
             try {
-                // Traducimos el tipo para el comando DROP de SQL
+              
                 String sqlTipo = "";
                 switch(tipo) {
                     case "TABLAS": sqlTipo = "TABLE"; break;
@@ -118,7 +123,7 @@ public class ExploradorObjetosView extends JFrame {
                 }
                 
                 db.ejecutarDDL("DROP " + sqlTipo + " " + seleccionado);
-                cargarObjetos(); // Refrescar lista automáticamente
+                cargarObjetos(); // Refrescar lista auto
                 JOptionPane.showMessageDialog(this, "Objeto eliminado correctamente.");
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "No se pudo eliminar: " + e.getMessage());

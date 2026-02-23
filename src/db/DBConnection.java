@@ -231,5 +231,27 @@ public String obtenerDDLVista(String nombreVista) throws SQLException {
     return "-- No se encontró el código de la vista.";
 }
 
+public String obtenerInfoTablespace(String nombreTS) throws SQLException {
+    String sql = "SELECT TBSPACETYPE, DATATYPE, PAGESIZE, EXTENTSIZE, OVERHEAD " +
+                 "FROM SYSCAT.TABLESPACES WHERE TBSPACE = ?";
+    
+    try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+        pstmt.setString(1, nombreTS.toUpperCase());
+        try (ResultSet rs = pstmt.executeQuery()) {
+            if (rs.next()) {
+                return "-- Propiedades del Tablespace: " + nombreTS + "\n" +
+                       "--------------------------------------\n" +
+                       "Tipo de Gestión: " + (rs.getString("TBSPACETYPE").equals("S") ? "SMS (Sistema)" : "DMS (Base de Datos)") + "\n" +
+                       "Tipo de Datos:   " + rs.getString("DATATYPE") + "\n" +
+                       "Tamaño de Página: " + rs.getInt("PAGESIZE") + " bytes\n" +
+                       "Extent Size:      " + rs.getInt("EXTENTSIZE") + "\n" +
+                       "Overhead:         " + rs.getDouble("OVERHEAD") + "\n\n" +
+                       "El DDL completo requiere acceso a los contenedores físicos en el SO.";
+            }
+        }
+    }
+    return "-- No se encontró información del Tablespace.";
+}
+
 
 }
