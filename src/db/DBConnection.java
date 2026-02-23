@@ -205,8 +205,6 @@ public String obtenerDDLIndice(String nombreIndice) throws SQLException {
             String tabla = rs.getString("TABNAME");
             String columnas = rs.getString("COLNAMES"); //col1+col2
             String unico = rs.getString("UNIQUERULE").equals("U") ? "UNIQUE " : "";
-            
-            // Limpiar las columnas: DB2 las trae con '+' al inicio
             columnas = columnas.replace("+", ", ").substring(2); 
 
             return "CREATE " + unico + "INDEX " + nombreIndice + 
@@ -214,6 +212,23 @@ public String obtenerDDLIndice(String nombreIndice) throws SQLException {
         }
     }
     return "-- No se pudo generar el DDL del índice.";
+}
+
+public String obtenerDDLVista(String nombreVista) throws SQLException {
+    
+    String sql = "SELECT TEXT FROM SYSCAT.VIEWS " +
+                 "WHERE VIEWNAME = '" + nombreVista.toUpperCase() + "'";
+
+    try (Statement stmt = connection.createStatement();
+         ResultSet rs = stmt.executeQuery(sql)) {
+        
+        if (rs.next()) {
+            String selectOriginal = rs.getString("TEXT");
+           
+            return selectOriginal.trim() + ";";
+        }
+    }
+    return "-- No se encontró el código de la vista.";
 }
 
 

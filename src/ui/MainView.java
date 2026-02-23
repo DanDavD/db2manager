@@ -64,8 +64,8 @@ public class MainView extends JFrame {
         JButton btnCrearTabla = new JButton("Nueva Tabla");
         btnCrearTabla.addActionListener(e -> abrirCrearTabla());
 
-        JButton btnVistas = new JButton("Vistas");
-        btnVistas.addActionListener(e -> abrirVistasPanel());
+        JButton btnCrearVista = new JButton("Nueva Vista"); 
+        btnCrearVista.addActionListener(e -> abrirCrearVistaDirecto());
 
         JButton btnExplorar = new JButton("Explorar Objetos");
         btnExplorar.addActionListener(e -> abrirExploradorMaestro());
@@ -74,7 +74,7 @@ public class MainView extends JFrame {
         btnRefrescar.addActionListener(e -> refrescarConexiones());
 
         panelBotones.add(btnCrearTabla);
-        panelBotones.add(btnVistas);
+        panelBotones.add(btnCrearVista);
         panelBotones.add(btnExplorar);
         panelBotones.add(btnRefrescar);
 
@@ -130,19 +130,16 @@ public class MainView extends JFrame {
         }
     }
 
-    private void abrirVistasPanel() {
-        String selectedName = connectionList.getSelectedValue();
-        if (selectedName != null) {
-            DBConnection db = connectionManager.getConnection(selectedName);
-            JFrame frame = new JFrame("Vistas - " + selectedName);
-            frame.setSize(800, 500);
-            frame.setLocationRelativeTo(this);
-            frame.add(new VistasPanel(db)); // Asumiendo que VistasPanel es JPanel
-            frame.setVisible(true);
-        } else {
-            mostrarAvisoConexion();
-        }
+    private void abrirCrearVistaDirecto() {
+    String selectedName = connectionList.getSelectedValue();
+    if (selectedName != null) {
+        DBConnection db = connectionManager.getConnection(selectedName);
+        // Abrimos directamente la ventana de creación, no el panel de listado
+        new CrearVistaView(db).setVisible(true);
+    } else {
+        mostrarAvisoConexion();
     }
+}
 
     private void abrirExploradorMaestro() {
         String selectedName = connectionList.getSelectedValue();
