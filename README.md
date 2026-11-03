@@ -1,107 +1,64 @@
-DB2 SYSTEM ADMINISTRATION TOOL
-Asignatura: Teoría de Bases de Datos II
-SGBD: IBM DB2 LUW (Linux, Unix, Windows)
-Lenguaje: Java 17 + JDBC (Driver db2jcc4)
-Arquitectura: Escritorio (Java Swing)
+# DB2 Manager
 
-1. INTRODUCCIÓN Y PROPÓSITO
-   Este proyecto consiste en el desarrollo de una herramienta administrativa de escritorio diseñada para la gestión integral de objetos de base de datos en entornos IBM DB2. El objetivo fundamental es interactuar con el motor mediante el uso exclusivo de System Tables (Tablas de Catálogo de Sistema), evitando el esquema estandarizado information_schema y cualquier framework de persistencia de alto nivel (ORM). La aplicación permite realizar auditorías de metadatos, ingeniería inversa de estructuras existentes y ejecución de scripts SQL dinámicos de forma directa y transparente.
+A desktop administration tool for IBM Db2 LUW, written in Java with Swing and plain JDBC. It connects to Db2, explores the database's objects, rebuilds their DDL from the system catalog and runs SQL, without an ORM and without `information_schema`: every query goes straight to the `SYSCAT` catalog views.
 
-2. ARQUITECTURA DEL SISTEMA (DESGLOSE DE CLASES)
-   El proyecto está estructurado bajo un patrón de diseño desacoplado, dividiendo la lógica de comunicación, los modelos de datos y la interfaz gráfica en 14 clases estratégicas:
+![Java](https://img.shields.io/badge/Java-17-orange?logo=openjdk)
+![IBM Db2](https://img.shields.io/badge/IBM%20Db2-LUW-052FAD)
+![Swing](https://img.shields.io/badge/UI-Swing-lightgrey)
+![JDBC](https://img.shields.io/badge/JDBC-db2jcc4-blue)
 
-A. Capa de Conectividad y Persistencia (Paquete db)
-ConnectionManager: Actúa como el núcleo de gestión de sesiones. Implementa un HashMap de conexiones que permite la administración simultánea de múltiples bases de datos e instancias de DB2 sin pérdida de estado.
+Coursework for Database Theory II at UNITEC.
 
-DBConnection: Es la clase de mayor peso técnico. Contiene la lógica de comunicación JDBC y las consultas SQL nativas hacia el catálogo SYSCAT. Se encarga de extraer metadatos crudos de columnas, llaves primarias, índices, secuencias y vistas para su posterior procesamiento.
+## What it does
 
-B. Capa de Modelado e Ingeniería Inversa (Paquete model)
-Tabla y Columna: Representan la abstracción lógica de una entidad física. El método generarDDL() dentro de la clase Tabla es el motor de ingeniería inversa; transforma objetos Java en scripts CREATE TABLE completos y ejecutables.
+- **Connections:** log in with host, port (25000 by default), database, user and password. `ConnectionManager` keeps several named connections open at once.
+- **Object explorer:** lists tables, views, indexes, triggers, sequences, procedures, functions, tablespaces and users from the catalog (system schemas are left out), shows the DDL of the selected object where it can be rebuilt (see below), and drops it after a confirmation.
+- **DDL from the catalog (reverse engineering):**
+  - tables: `CREATE TABLE` with every column's type (with its length for character types), `NOT NULL`, and the primary key, from `SYSCAT.COLUMNS` and `SYSCAT.KEYCOLUSE`;
+  - views: their original `SELECT`, from `SYSCAT.VIEWS.TEXT`;
+  - indexes: `CREATE [UNIQUE] INDEX` with their columns, from `SYSCAT.INDEXES`;
+  - users: the `GRANT` statements for their database authorities, from `SYSCAT.DBAUTH`;
+  - tablespaces: their properties (SMS or DMS, page size, extent size, overhead).
+- **Visual creation:** forms to design a table or a view, preview its DDL and create it. A primary key column is locked to `NOT NULL`, as Db2 requires.
+- **SQL editor:** a `SELECT` fills a result grid built from `ResultSetMetaData`; DDL and DML report success and the rows affected.
 
-Vista: Almacena la definición de consulta recuperada directamente del campo TEXT de SYSCAT.VIEWS para su reconstrucción exacta.
+## How it is built
 
-ConnectionConfig: Estructura de datos utilizada para encapsular los parámetros de conexión (Host, Puerto, Database, User).
+| Package | Classes | Role |
+|---|---|---|
+| `db` | `ConnectionManager`, `DBConnection` | JDBC sessions, and every catalog query and DDL builder |
+| `model` | `Tabla`, `Columna`, `Vista`, `ConnectionConfig` | The objects read from the catalog; `Tabla.generarDDL()` turns a table back into SQL |
+| `ui` | `LoginView`, `MainView`, `ExploradorObjetosView`, `CrearTablaView`, `CrearVistaView`, `TablasPanel`, `VistasPanel`, `DDLView` | The Swing windows and panels |
+| `app` | `Main` | Entry point |
 
-C. Capa de Interfaz de Usuario (Paquete ui)
-LoginView: Ventana de autenticación con validación de credenciales y carga de driver.
+Catalog views used: `SYSCAT.TABLES`, `COLUMNS`, `KEYCOLUSE`, `VIEWS`, `INDEXES`, `TRIGGERS`, `SEQUENCES`, `PROCEDURES`, `FUNCTIONS`, `TABLESPACES` and `DBAUTH`.
 
-MainView: Consola central que integra el editor SQL dinámico, el explorador de conexiones y el visor de resultados basado en metadatos.
+## Limitations, and why
 
-ExploradorObjetosView: Browser universal de objetos que permite filtrar por tipos (Tablas, Vistas, Índices, etc.) y realizar operaciones de DROP.
+- **Procedures, functions and triggers are listed but their DDL is not rebuilt.** Db2 stores SQL PL bodies in a segmented or precompiled form, and rebuilding them without a full SQL PL parser would produce scripts that might not run.
+- **No `CREATE TABLESPACE`.** A tablespace depends on physical containers (paths on the server), which the JDBC driver does not expose without instance-level authority (`SYSADM`).
+- **No `CREATE USER`.** Db2 LUW has no such statement: users live in the operating system or a directory service (LDAP, Active Directory). The tool manages what the database does own: the authorities granted to each user.
+- **No DDL for packages.** Packages are compiled objects produced by a bind, with no plain-text definition in the catalog.
 
-CrearTablaView y CrearVistaView: Formularios interactivos para el diseño visual de objetos.
+## Getting started
 
-TablasPanel y VistasPanel: Componentes modulares para la gestión específica de estos objetos.
+You need Java 17, a reachable Db2 LUW instance and the IBM JDBC driver `db2jcc4.jar` (it ships with Db2, in `sqllib/java`, and with the IBM Data Server Driver for JDBC). The driver is not in the repository.
 
-DDLView: Visor especializado de código con fuente monoespaciada para la exportación de scripts.
+From the repository folder, with the driver in `lib/`:
 
-3. COMPARATIVA DE REQUERIMIENTOS VS. IMPLEMENTACIÓN
-   3.1. Gestión de Conexiones y Autenticación (Estado: 100%)
-   Se permite el inicio de sesión con cualquier usuario válido del sistema.
+```
+javac -cp lib/db2jcc4.jar -d out src/app/*.java src/db/*.java src/model/*.java src/ui/*.java
+java -cp "out;lib/db2jcc4.jar" app.Main
+```
 
-Capacidad probada para almacenar y alternar entre múltiples conexiones a distintas instancias de DB2.
+(On Linux or macOS, use `:` instead of `;` in the classpath.) The login window opens; Db2's default port is 25000.
 
-3.2. Operaciones sobre Objetos (Estado: COMPLETADO)
-Creación Visual: Interfaces dedicadas para crear tablas y vistas sin necesidad de escribir código manual.
+## Project structure
 
-Generación de DDL: Capacidad de leer cualquier tabla o vista existente y reconstruir su SQL de creación fielmente desde la metadata.
-
-Modificación: Se permite la edición de objetos mediante la exportación de su DDL al editor SQL para ajustes manuales y posterior re-ejecución.
-
-3.3. Ejecución de Sentencias SQL (Estado: 100%)
-El editor SQL procesa sentencias SELECT visualizando resultados en una rejilla dinámica mediante ResultSetMetaData.
-
-Ejecución exitosa de scripts DDL (CREATE, DROP) y DML (INSERT, UPDATE) con reporte de estado y filas afectadas.
-
-4. AUDITORÍA DE OBJETOS MEDIANTE CATÁLOGO (SYSCAT)
-   La herramienta demuestra su potencia técnica mediante consultas directas a las siguientes vistas de catálogo de IBM:
-
-SYSCAT.TABLES: Para obtener el esquema, nombre, propietario y fecha de creación de tablas y vistas.
-
-SYSCAT.COLUMNS: Para extraer tipos de datos, longitudes, precisión y nulidad.
-
-SYSCAT.TABCONST y SYSCAT.KEYCOLUSE: Para identificar restricciones de integridad y llaves primarias.
-
-SYSCAT.INDEXES: Para mapear la estructura de índices y sus reglas de unicidad.
-
-SYSCAT.SEQUENCES: Para auditar el estado y valores de los generadores.
-
-SYSCAT.DBAUTH: Para verificar los privilegios administrativos de los usuarios.
-
-5. DOCUMENTACIÓN DE LIMITACIONES Y JUSTIFICACIONES TÉCNICAS
-   En cumplimiento con la rúbrica de evaluación, se detallan las limitaciones del proyecto basadas en la complejidad estructural de IBM DB2:
-
-5.1. Lógica Programable (Triggers, Funciones y Procedimientos)
-Limitación: Estos objetos se listan y exploran en la metadata, pero el sistema no reconstruye su DDL de creación completo.
-
-Justificación: En DB2, el código SQL PL de estos objetos se almacena de forma segmentada o precompilada en el catálogo. Intentar una reconstrucción manual sin un parser de lenguaje procedimental avanzado podría generar scripts incompletos o sintácticamente incorrectos. Por seguridad del esquema y estabilidad del software, el sistema solo permite verificar su existencia y parámetros básicos.
-
-5.2. Tablespaces y Almacenamiento
-Limitación: Se visualizan métricas técnicas (PAGESIZE, EXTENTSIZE, TYPE), pero no se genera la sentencia CREATE TABLESPACE.
-
-Justificación: La creación de un Tablespace en DB2 depende de "contenedores" físicos (SMS/DMS) que son rutas de directorios en el servidor. El driver JDBC, por diseño de seguridad, no siempre expone las rutas físicas del sistema de archivos del servidor a menos que se posean privilegios de instancia (SYSADM), los cuales exceden el alcance de un usuario estándar de base de datos.
-
-5.3. Administración de Usuarios y Seguridad
-Limitación: La gestión se limita a la auditoría de permisos de usuario existentes; no se permite la creación física de usuarios.
-
-Justificación: A diferencia de otros motores, DB2 delega la gestión de usuarios al Sistema Operativo o a servicios externos (LDAP/Active Directory). La sentencia "CREATE USER" no existe como tal dentro del SQL de DB2 LUW, por lo que la herramienta se enfoca en gestionar lo que sí reside en el motor: los permisos y roles asignados (DBADMAUTH, CONNECTAUTH).
-
-5.4. Paquetes (Packages) e Índices Complejos
-Limitación: Se omitió el DDL de paquetes y detalles de compresión de índices.
-
-Justificación: Los paquetes son objetos binarios compilados resultantes de un proceso de Bind; no poseen una representación de texto plano reconstruible en el catálogo. En cuanto a los índices, DB2 maneja opciones de particionamiento y compresión que requieren acceso a tablas de bajo nivel (SYSIBM) que no siempre están garantizadas para usuarios sin perfil de administrador de sistema.
-
-6. CONSIDERACIONES TÉCNICAS FINALES
-   Uso de System Tables: Se evitó estrictamente el uso de frameworks (Hibernate/JPA) para garantizar el uso explícito de SQL nativo contra el catálogo de IBM.
-
-Integridad Referencial: El sistema incluye validaciones preventivas en la UI, como el bloqueo automático de la opción "Nullable" cuando una columna es definida como Primary Key, respetando las reglas de integridad de DB2.
-
-Modularidad: El diseño permite que la lógica de generación de SQL (Modelo) sea independiente de la ejecución (Base de Datos), facilitando futuras extensiones del software.
-
-Instrucciones de Ejecución:
-
-Verifique la existencia del driver db2jcc4.jar en el classpath del proyecto.
-
-Ejecute la clase ui.LoginView para iniciar el asistente de conexión.
-
-Utilizar el puerto estándar 25000 para conexiones remotas a instancias DB2.
+```
+src/
+  app/     Main, the entry point
+  db/      Connections, catalog queries and DDL builders
+  model/   Tables, columns and views read from the catalog
+  ui/      Swing windows: login, main view, object explorer, creation forms, DDL viewer
+```
